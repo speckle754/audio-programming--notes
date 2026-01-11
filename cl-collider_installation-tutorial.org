@@ -1,5 +1,5 @@
 #+TITLE: cl-collider Installation Tutorial
- 
+#+OPTIONS: \n:t timestamp:nil 
 * 本文目标
 配置SuperCollider 的操作层Common Lisp语言环境。
 具体表现为在sbcl REPL内可以使用cl-collider控制SuperCollider发声。
