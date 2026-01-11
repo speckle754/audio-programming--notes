@@ -1,0 +1,102 @@
+#+TITLE: cl-collider Installation Tutorial
+ 
+* 本文目标
+配置SuperCollider 的操作层Common Lisp语言环境。
+具体表现为在sbcl REPL内可以使用cl-collider控制SuperCollider发声。
+* 将会使用到的程序
+- MSYS2
+  - SuperCollider = [scsynth, sclang, scide, supernova]
+  - Jack2
+  - sbcl
+  - git
+- ocicl
+  - cl-collider
+* 具体的操作指南
+** 安装MSYS2
+a. 访问 https://www.msys2.org/
+b. 根据页面指引，安装 =x86_64= 也就是64位的msys2 installer。
+c. 安装好后，配置Windows环境变量，方法参见[fn:1]。
+   需要注意的是，在配置好Windows环境变量后，运行PowerShell的终端中也是能够运 =pacman= 命令的。
+d. 还是先在UCRT64 shell下更新pacman包仓库和本体。
+#+BEGIN_SRC bash
+  pacman -Syu
+#+END_SRC
+e. 按提示所说重启UCRT64终端。
+** 通过MSYS2安装部分后续程序
+a. 通过pacman命令安装程序。
+   推荐用其他终端，MSYS2的终端难以进行复制和粘贴操作。
+#+BEGIN_SRC bash
+  pacman -Su \
+         mingw-w64-ucrt-x86_64-jack2 \
+         mingw-w64-ucrt-x86_64-sbcl \
+         mingw-w64-ucrt-x86_64-supercollider \
+         git
+#+END_SRC
+** 编译ocicl
+更多请参见这个 [[https://github.com/ocicl/ocicl][github repo: ocicl]] 和它README里的 [[https://github.com/ocicl/ocicl?tab=readme-ov-file#installation][installation guide]].
+a. 从源代码编译ocicl，这是一个common lisp包管理程序。
+#+BEGIN_SRC bash
+  cd ~
+  git clone https://github.com/ocicl/ocicl.git
+  cd ocicl
+  sbcl --load setup.lisp
+#+END_SRC
+b. ocicl.exe 将会出现在 =%UserProfile%\AppData\Local\ocicl\= 目录下。 
+   一个典型的目录是 =C:\Users\Your-User-Name\AppData\Local\ocicl\bin= ，
+   *需要* 将该含有 =ocicl.exe= 的文件夹路径添加到Windows系统环境变量里，方法参见脚注[fn:1]。
+c. 在PowerShell终端下运行 =ocicl version= 后正常打印该程序的信息后，你就删除该源代码文件夹了。
+** 使用ocicl 安装 cl-collider
+a. 切换到PowerShell终端下，执行：
+#+BEGIN_SRC PowerShell
+  ocicl setup
+#+END_SRC
+b. 将该命令打印出的内容粘贴到 =~/.sbclrc= 中。
+c. 正式开始安装cl-collider。执行：
+#+BEGIN_SRC PowerShell
+  ocicl --global install cl-collider
+#+END_SRC
+** 使用 sbcl REPL运行cl-collider
+a. 终端中输入以下命令：
+#+BEGIN_SRC bash
+  sbcl
+#+END_SRC
+b. 进入REPL，再依次执行如下common lisp语句，以启动scsynth服务器。
+#+BEGIN_SRC lisp
+  (asdf:load-system :cl-collider)
+  (in-package :sc-user)
+  (setf *sc-synth-program* "C:/msys64/ucrt64/bin/scsynth.exe")
+  (setf *sc-plugin-paths* (list "C:/msys64/ucrt64/lib/SuperCollider/plugins/"))
+  (setf *s* (make-external-server "localhost" :port 4444))
+  (server-boot *s*)
+#+END_SRC
+c. 一个简单的发声测试语句。
+#+BEGIN_SRC lisp
+  (proxy :test-sound (sin-osc.ar 440 0 0.2))
+  ;;stop playing
+  (proxy :test-sound nil)
+  ;;exit sbcl
+  (in-package :cl-user)
+  (exit)
+#+END_SRC
+d. 将以上 =b.= 部分的信息写入 =~/.sbclrc= 尾部，即可实现对cl-collider进行配置。
+#+BEGIN_SRC lisp
+  ;; In your ~/.sbclrc
+  (defun my/cl-collider-boot ()
+    ;;codes in "b."
+    )
+  ;; In REPL run this to quickly boot that.
+  (my/cl-collider-boot)
+#+END_SRC
+* Footnotes
+[fn:1] 如何配置Windows环境变量。
+1. 按下Windows徽章键，搜索“系统环境变量”。
+2. 弹出的卡片菜单里“高级”分页内，最下面“确认“按钮上方，点击该“编辑环境变量”按钮。
+3. 我们需要编辑列表中”PATH“的值，选中列表的”PATH“，双击或点击”编辑按钮“打开完整列表。
+   添加:
+#+BEGIN_SRC plain-text
+  C:\msys64\ucrt64\bin
+  C:\msys64\mingw64\bin
+  C:\Users\JohnDoe\AppData\Local\ocicl\bin
+           ~~~~~~~
+           ^Repalce this to your user name. 
+#+END_SRC
